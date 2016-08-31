@@ -308,24 +308,27 @@ int main(int argc, char *argv[]) {
 
   serv_addr.sin_family = AF_INET;
 
+  inet_aton(argv[1], &serv_addr.sin_addr);
   serv_addr.sin_port = htons(FPM_DEFAULT_PORT);
   unsigned char buf[100];
   if (inet_pton(AF_INET, argv[1], buf) <= 0) {
     printf("\n inet_pton error occured\n");
     return 1;
   }
-
   if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-    printf("\n Error : Connect Failed \n");
+    printf("\n Error : Connect Failed %i\n", errno);
     return 1;
   }
   char input_buf[100];
   printf("type help for help\n");
+  printf(">>");
   while (fgets(input_buf, sizeof(input_buf), stdin) != 0){
-    printf(">>");
-
-
+    if (input_buf[0] == '\n') {
+      printf(">>");
+      continue;
+    }
     char *command_type, *command;
+
     command = input_buf;
     command_type = strtok(command, " \n");  //this tell us which type of packet we want to send
 
@@ -364,6 +367,7 @@ int main(int argc, char *argv[]) {
     } else {
       printf("type help for help\n");
     }
+  printf(">>");
   }
 
   return EXIT_SUCCESS;
