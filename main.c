@@ -218,6 +218,17 @@ void send_partial_netlink_packet(int sockfd, char command[]) {
   write(sockfd, buf, msg_len / 2);
 }
 
+void send_garbage(int sockfd, char command[]) {
+  unsigned char buf[BUFFER_SIZE];
+  int x;
+  for (x = 0; x < BUFFER_SIZE; x++) {
+    buf[x] = 'A' + (random() % 26);
+    printf("%i", buf[x]);
+  }
+  printf("\n");
+  write(sockfd, buf, BUFFER_SIZE);
+}
+
 void sendNHLFEUpdate(int sockfd, char * command) {
   unsigned char buf[BUFFER_SIZE];
 
@@ -378,8 +389,12 @@ int main(int argc, char *argv[]) {
     if (strcmp(command_type, "r") == 0) {
       send_netlink_packet(sockfd, command);
     } else if (strcmp(command_type, "e") == 0)  {
-      // This is for testing partial packet send. e for error :) 
+      // This is for testing partial packet send. e for error
       send_partial_netlink_packet(sockfd, command);
+      return EXIT_SUCCESS;
+    } else if (strcmp(command_type, "g") == 0)  {
+      // This is for testing garbage send. g for garbage
+      send_garbage(sockfd, command);
       return EXIT_SUCCESS;
     } else if (strcmp(command_type, "exit") == 0) {
       return EXIT_SUCCESS;
