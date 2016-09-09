@@ -218,6 +218,48 @@ void send_partial_netlink_packet(int sockfd, char command[]) {
   write(sockfd, buf, msg_len / 2);
 }
 
+void send_split_netlink_packet(int sockfd, char command[]) {
+  char *gateway, *network, *mask, *interface;
+
+  network = strtok(command, " \n");
+
+  gateway = strtok(NULL, " \n");
+  interface = strtok(NULL, " \n");
+  network = strtok(network, "/");
+  mask = strtok(NULL, "/");
+
+  union ip_add gw;
+  gw.ip_addr = inet_addr(gateway);
+
+  union ip_add dst;
+
+  dst.ip_addr = inet_addr(network);
+
+  unsigned char buf[BUFFER_SIZE];
+
+  char* data;
+
+  fpm_msg_hdr_t *hdr;
+
+  hdr = (fpm_msg_hdr_t *) buf;
+
+  hdr->version = FPM_PROTO_VERSION;
+  hdr->msg_type = FPM_MSG_TYPE_NETLINK;
+  data = fpm_msg_data(hdr);
+
+  int interface_id = if_nametoindex(interface);
+
+  //build a netlink packet to send
+  int nl_len = netlink_route_info_encode(data, gw, dst, mask, interface_id,
+                                         BUFFER_SIZE);
+
+  int msg_len = fpm_data_len_to_msg_len(nl_len);
+
+  hdr->msg_len = htons(msg_len);
+  write(sockfd, buf, 3);
+  write(sockfd, buf + 3, msg_len - 3);
+}
+
 void send_garbage(int sockfd, char command[]) {
   unsigned char buf[BUFFER_SIZE];
   int x;
@@ -396,6 +438,9 @@ int main(int argc, char *argv[]) {
       // This is for testing garbage send. g for garbage
       send_garbage(sockfd, command);
       return EXIT_SUCCESS;
+    } else if (strcmp(command_type, "s") == 0) {
+      // This is for testing split send. s for split
+      send_split_netlink_packet(sockfd, command);
     } else if (strcmp(command_type, "exit") == 0) {
       return EXIT_SUCCESS;
 
